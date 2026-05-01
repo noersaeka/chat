@@ -28,23 +28,20 @@ jobs:
         env:
           VITE_WS_URL: ws://${{ secrets.EC2_HOST }}:3001
 
-      - name: Deploy to S3
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ap-southeast-3
 
       - name: Sync dist to S3
-        run: |
-          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete
+        run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete
 
   deploy-backend:
     name: Deploy Backend to EC2
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
       - name: Deploy server via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -52,10 +49,17 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
+            mkdir -p /home/ubuntu/app
             cd /home/ubuntu/app
-            git clone https://github.com/${{ github.repository }}.git repo 2>/dev/null || (cd repo && git pull origin main)
-            cd repo/server
-            npm install -g pnpm
+            if [ -d "repo" ]; then
+              cd repo && git pull origin main
+            else
+              git clone https://github.com/${{ github.repository }}.git repo
+              cd repo
+            fi
+            cd server
+            sudo npm install -g pnpm pm2 2>/dev/null || true
             pnpm install
             pm2 delete ws-server 2>/dev/null || true
             pm2 start pnpm --name ws-server -- run dev
