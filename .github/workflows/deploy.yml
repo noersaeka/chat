@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   deploy-frontend:
     name: Build & Deploy Frontend to S3
@@ -42,7 +45,18 @@ jobs:
     name: Deploy Backend to EC2
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy server via SSH
+      - uses: actions/checkout@v4
+
+      - name: Copy server files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "server/"
+          target: "/home/ubuntu/app"
+
+      - name: Start server on EC2
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -50,17 +64,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            mkdir -p /home/ubuntu/app
-            cd /home/ubuntu/app
-            if [ -d "repo" ]; then
-              cd repo && git pull origin main
-            else
-              git clone https://github.com/${{ github.repository }}.git repo
-              cd repo
-            fi
-            cd server
-            sudo npm install -g pnpm pm2 2>/dev/null || true
+            cd /home/ubuntu/app/server
+            curl -fsSL https://get.pnpm.io/install.sh | sh -
+            export PATH="$HOME/.local/share/pnpm:$PATH"
             pnpm install
             pm2 delete ws-server 2>/dev/null || true
             pm2 start pnpm --name ws-server -- run dev
             pm2 save
+
