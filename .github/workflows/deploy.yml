@@ -1,0 +1,62 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-frontend:
+    name: Build & Deploy Frontend to S3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build frontend
+        run: pnpm run build
+        env:
+          VITE_WS_URL: ws://${{ secrets.EC2_HOST }}:3001
+
+      - name: Deploy to S3
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Sync dist to S3
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete
+
+  deploy-backend:
+    name: Deploy Backend to EC2
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy server via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/app
+            git clone https://github.com/${{ github.repository }}.git repo 2>/dev/null || (cd repo && git pull origin main)
+            cd repo/server
+            npm install -g pnpm
+            pnpm install
+            pm2 delete ws-server 2>/dev/null || true
+            pm2 start pnpm --name ws-server -- run dev
+            pm2 save
