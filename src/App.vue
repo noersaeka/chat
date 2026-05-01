@@ -154,13 +154,40 @@ body {
 }
 
 @media (max-width: 768px) {
-  .chat-grid {
-    grid-template-columns: 1fr;
-    height: auto;
+  .app-container {
+    padding: 16px;
+    height: 100dvh;
+    justify-content: flex-start;
   }
 
-  .chat-grid > * {
-    height: 50vh;
+  .app-header {
+    margin-bottom: 12px;
+  }
+
+  .app-header h1 {
+    font-size: 20px;
+  }
+
+  .chat-grid {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    overflow-y: auto;
+    height: auto;
+    flex: 1 1 0;
+  }
+
+  .chat-grid :deep(.chat-window) {
+    max-width: 100%;
+    height: 45dvh;
+  }
+
+  .character-img {
+    display: none;
+  }
+
+  .divider {
+    display: none;
   }
 }
 </style>
