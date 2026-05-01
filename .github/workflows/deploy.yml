@@ -53,8 +53,8 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "server/"
-          target: "/home/ubuntu/app"
+          source: 'server/'
+          target: '/home/ubuntu/app'
 
       - name: Start server on EC2
         uses: appleboy/ssh-action@v1
@@ -71,4 +71,3 @@ jobs:
             pm2 delete ws-server 2>/dev/null || true
             pm2 start pnpm --name ws-server -- run dev
             pm2 save
-
