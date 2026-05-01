@@ -447,11 +447,11 @@ Redis : 3/5
 VSCode / JetBrains : 4/5
 Linux : 2/5 (Macos Unix)
 AWS : 4/5
-EC2 : 3/5
+EC2 : 2/5
 Lambda : 4/5
 RDS : 3/5
-CloudWatch : 2/5
-S3 : 3/5
+CloudWatch : 4/5
+S3 : 4/5
 Unit Testing : 3/5
 Kanban Boards : 5/5 (Jira)
 ```
